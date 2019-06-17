@@ -1,4 +1,7 @@
 ;;;; Sudoku Solver - written with LispWorks 7.1.1 64-bit on Windows 10
+;;;; The Sudoku solving code is an implementation of Knuth's DLX algorithm
+;;;; (Dancing Links / Algorithm X), solving Sudoku puzzles by converting them
+;;;; into exact cover problems.
 
 ;;; A representation of a matrix of 0s and 1s (for the DLX algorithm)
 
@@ -202,7 +205,7 @@ be easier to see."
                 collect (loop for col from 0 below 9
                               collect (char ".123456789" (aref grid row col))))))
 
-(defvar *default-boxes*
+(defvar *default-box-grid*
   (string-to-grid "111222333111222333111222333444555666444555666444555666777888999777888999777888999")
   "The 3x3 regions that must contain the digits 1-9 in regular Sudoku.")
 
@@ -233,34 +236,33 @@ digit in the given row/col/box."
         (svref columns (+ (* col 9) (1- digit) (* 9 9 2)))
         (svref columns (+ (* (1- box) 9) (1- digit) (* 9 9 3)))))
 
-(defun solve (sudoku-grid &optional (box-grid *default-boxes*))
+(defun solve (sudoku-grid box-grid solution-grid)
   "Solve the SUDOKU-GRID puzzle where the boxes are defined by BOX-GRID.
-Return a single grid solution."
-  (let* ((grid (string-to-grid (grid-to-string sudoku-grid)))
-         (root (make-empty-matrix *constraint-names*))
+Overwrite SOLUTION-GRID with the solution if available, otherwise set it
+the same values as SUDOKU-GRID. Returns SOLUTION-GRID."
+  (let* ((root (make-empty-matrix *constraint-names*))
          (columns (coerce (matrix-columns root) 'vector)))
-    (labels ((set-digit (&key row col digit box)
+    (dotimes (row 9)
+      (dotimes (col 9)
+        (loop with box = (aref box-grid row col)
+              for digit from 1 to 9
+              do (add-row (get-columns columns row col box digit)))))
+    (dotimes (row 9)
+      (dotimes (col 9)
+        (let ((digit (aref sudoku-grid row col))
+              (box (aref box-grid row col)))
+          (setf (aref solution-grid row col) digit)
+          (unless (zerop digit)
+            (mapc #'cover-column (get-columns columns row col box digit))))))
+    (flet ((set-digit (&key row col box digit)
                (declare (ignore box))
-               (setf (aref grid row col) digit))
-             (row-names (data)
-               (loop for d = data then (right d)
-                     repeat 4
-                     append (name (column d))))
-             (add-data-to-solution (data)
-               (apply #'set-digit (row-names data))))
-      (dotimes (row 9)
-        (dotimes (col 9)
-          (loop with box = (aref box-grid row col)
-                for digit from 1 to 9
-                do (add-row (get-columns columns row col box digit)))))
-      (dotimes (row 9)
-        (dotimes (col 9)
-          (let ((digit (aref sudoku-grid row col))
-                (box (aref box-grid row col)))
-            (unless (zerop digit)
-              (mapc #'cover-column (get-columns columns row col box digit))))))
-      (mapc #'add-data-to-solution (dlx-search root))
-      grid)))
+               (setf (aref solution-grid row col) digit))
+           (row-names (data)
+             (loop for d = data then (right d)
+                   repeat 4
+                   append (name (column d)))))
+      (dolist (data (dlx-search root) solution-grid)
+        (apply #'set-digit (row-names data))))))
 
 
 
@@ -311,17 +313,20 @@ Return a single grid solution."
     "174835962293476158586192734957324816428961375361758249812547693635219487749683521"
     "869571324327849516145623987952368741681497235473215869514982673798136452236754198"))
 
-
 (defun test-sudoku-hardest20 ()
-  (loop for input in *hardest20*
+  (loop with solution-grid = (make-array '(9 9) :element-type 'grid-value :initial-element 0)
+        for input in *hardest20*
         for expected in *hardest20-solutions*
-        do (assert (string= expected (grid-to-string (solve (string-to-grid input)))))))
+        for actual = (grid-to-string (solve (string-to-grid input) *default-box-grid* solution-grid))
+        do (assert (string= expected actual))))
 
 (defun test-irregular-boxes ()
-  (let ((sudoku-string "....2...12....96..53.....27.923761....71...3...69415.33......9.....6...57...3..1.")
-        (box-string "111222233111122223441155233444555533644475593664777593666677799866877999888888899"))
-    (assert (string= (grid-to-string (solve (string-to-grid sudoku-string) (string-to-grid box-string)))
-                     "948527361253719684531698427492376158687154239826941573315482796179263845764835912"))))
+  (let* ((solution-grid (make-array '(9 9) :element-type 'grid-value :initial-element 0))
+         (sudoku-string "....2...12....96..53.....27.923761....71...3...69415.33......9.....6...57...3..1.")
+         (box-string "111222233111122223441155233444555533644475593664777593666677799866877999888888899")
+         (expected "948527361253719684531698427492376158687154239826941573315482796179263845764835912")
+         (actual (grid-to-string (solve (string-to-grid sudoku-string) (string-to-grid box-string) solution-grid))))
+    (assert (string= expected actual))))
 
 (defun test-sudoku-grid-mistakes ()
   (let* ((box-string "111222233111122223441155233444555533644475593664777593666677799866877999888888899")
@@ -337,7 +342,7 @@ Return a single grid solution."
     (assert (equal '((1 . 0) (2 . 3) (2 . 7)) (sudoku-grid-mistakes bad-grid-2 box-grid)))))
 
 (defun test-box-grid-mistakes ()
-  (assert (null (box-grid-mistakes *default-boxes*)))
+  (assert (null (box-grid-mistakes *default-box-grid*)))
   (let ((good-string "111222233111122223441155233444555533644475593664777593666677799866877999888888899"))
     (assert (null (box-grid-mistakes (string-to-grid good-string)))))
   (let ((missing-a-one ".11222233111122223441155233444555533644475593664777593666677799866877999888888899"))
@@ -351,8 +356,6 @@ Return a single grid solution."
   (let ((separate-1-and-8 "811222233111122223441155233444555533644475593664777593666677799866877999888818899"))
     (assert (equal '((0 . 0) (8 . 4))
                    (box-grid-mistakes (string-to-grid separate-1-and-8))))))
-  
-
 
 (defun run-all-tests ()
   (test-sudoku-hardest20)
