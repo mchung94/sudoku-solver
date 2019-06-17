@@ -126,14 +126,70 @@ searching for all solutions."
   "A 9x9 2D array to represent a Sudoku grid."
   '(simple-array grid-value (9 9)))
 
+(defun box-grid-mistakes (box-grid)
+  "Return a list of (row . column) conses for bad cell values in a box grid.
+Box grids use the digits 1-9 to indicate the different boxes/regions that must
+contain the digits 1-9 (each row, column, and box must contain 1-9 in the
+Sudoku solution). In a regular Sudoku puzzle, the boxes are nine 3x3 regions,
+but Microsoft Sudoku supports irregular-shaped boxes. Cell values are bad when
+they're empty, not next to another cell with the same digit, or if there are not
+exactly nine of the same digit."
+  (labels ((neighbors (row col)
+             (loop for r from (1- row) to (1+ row)
+                   when (<= 0 r 8)
+                   nconc (loop for c from (1- col) to (1+ col)
+                               when (and (<= 0 c 8)
+                                         (not (and (= c col) (= r row))))
+                               collect (cons r c))))
+           (separatep (row col box)
+             (loop for (r . c) in (neighbors row col)
+                   never (= box (aref box-grid r c))))
+           (box-cell-counts ()
+             (let ((counts (make-array 10 :initial-element 0)))
+               (dotimes (row 9 counts)
+                 (dotimes (col 9)
+                   (incf (svref counts (aref box-grid row col))))))))
+    (loop with counts = (box-cell-counts)
+          for row from 0 below 9
+          nconc (loop for col from 0 below 9
+                      for box = (aref box-grid row col)
+                      when (or (zerop box)
+                               (separatep row col box)
+                               (/= 9 (svref counts box)))
+                      collect (cons row col)))))
+
+(defun sudoku-grid-mistakes (sudoku-grid box-grid)
+  "Return a list of (row . column) conses for bad cell values in a Sudoku grid.
+Cell values are bad when there is another cell in the same row/column/box with
+the same digit."
+  (flet ((count-in-column (col digit)
+           (loop for row from 0 below 9
+                 count (= digit (aref sudoku-grid row col))))
+         (count-in-row (row digit)
+           (loop for col from 0 below 9
+                 count (= digit (aref sudoku-grid row col))))
+         (count-in-box (box digit)
+           (loop for row from 0 below 9
+                 sum (loop for col from 0 below 9
+                           count (and (= box (aref box-grid row col))
+                                      (= digit (aref sudoku-grid row col)))))))
+    (loop for row from 0 below 9
+          nconc (loop for col from 0 below 9
+                      for digit = (aref sudoku-grid row col)
+                      for box = (aref box-grid row col)
+                      when (and (not (zerop digit))
+                                (or (> (count-in-column col digit) 1)
+                                    (> (count-in-row row digit) 1)
+                                    (> (count-in-box box digit) 1)))
+                      collect (cons row col)))))
+
 (defun string-to-grid (string)
   "Create a grid from a string. 0 and period are empty cells, 1-9 are digits,
 ignore all other characters."
   (loop with grid = (make-array '(9 9) :element-type 'grid-value :initial-element 0)
         for ch across (remove-if (complement #'digit-char-p) (substitute #\0 #\. string))
-        for offset from 0
-        do (multiple-value-bind (row col) (floor offset 9)
-             (setf (aref grid row col) (position ch "0123456789")))
+        for index from 0
+        do (setf (row-major-aref grid index) (position ch "0123456789"))
         finally (return grid)))
 
 (defun grid-to-string (grid &optional add-whitespace)
@@ -208,7 +264,8 @@ Return a single grid solution."
 
 
 
-;;; Testing code (hardest20 comes from https://attractivechaos.github.io/plb/kudoku.html)
+;;; Testing code (*hardest20* and *hardest20-solutions* come from
+;;; https://attractivechaos.github.io/plb/kudoku.html)
 
 (defvar *hardest20*
   '("..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9"
@@ -266,6 +323,39 @@ Return a single grid solution."
     (assert (string= (grid-to-string (solve (string-to-grid sudoku-string) (string-to-grid box-string)))
                      "948527361253719684531698427492376158687154239826941573315482796179263845764835912"))))
 
+(defun test-sudoku-grid-mistakes ()
+  (let* ((box-string "111222233111122223441155233444555533644475593664777593666677799866877999888888899")
+         (box-grid (string-to-grid box-string))
+         (good-string "....2...12....96..53.....27.923761....71...3...69415.33......9.....6...57...3..1.")
+         (good-grid (string-to-grid good-string))
+         (bad-string-1 "....2...12....96..53.....272923761....71...3...69415.33......9.....6...57...3..1.")
+         (bad-grid-1 (string-to-grid bad-string-1))
+         (bad-string-2 "....2...12....96..53.2...27.923761....71...3...69415.33......9.....6...57...3..1.")
+         (bad-grid-2 (string-to-grid bad-string-2)))
+    (assert (null (sudoku-grid-mistakes good-grid box-grid)))
+    (assert (equal '((1 . 0) (3 . 0) (3 . 2)) (sudoku-grid-mistakes bad-grid-1 box-grid)))
+    (assert (equal '((1 . 0) (2 . 3) (2 . 7)) (sudoku-grid-mistakes bad-grid-2 box-grid)))))
+
+(defun test-box-grid-mistakes ()
+  (assert (null (box-grid-mistakes *default-boxes*)))
+  (let ((good-string "111222233111122223441155233444555533644475593664777593666677799866877999888888899"))
+    (assert (null (box-grid-mistakes (string-to-grid good-string)))))
+  (let ((missing-a-one ".11222233111122223441155233444555533644475593664777593666677799866877999888888899"))
+    (assert (equal '((0 . 0) (0 . 1) (0 . 2) (1 . 0) (1 . 1) (1 . 2) (1 . 3) (2 . 2) (2 . 3))
+                   (box-grid-mistakes (string-to-grid missing-a-one)))))
+  (let ((too-many-ones "111122233111122223441155233444555533644475593664777593666677799866877999888888899"))
+    (assert (equal '((0 . 0) (0 . 1) (0 . 2) (0 . 3) (0 . 4) (0 . 5) (0 . 6)
+                     (1 . 0) (1 . 1) (1 . 2) (1 . 3) (1 . 4) (1 . 5) (1 . 6) (1 . 7)
+                     (2 . 2) (2 . 3) (2 . 6))
+                   (box-grid-mistakes (string-to-grid too-many-ones)))))
+  (let ((separate-1-and-8 "811222233111122223441155233444555533644475593664777593666677799866877999888818899"))
+    (assert (equal '((0 . 0) (8 . 4))
+                   (box-grid-mistakes (string-to-grid separate-1-and-8))))))
+  
+
+
 (defun run-all-tests ()
   (test-sudoku-hardest20)
-  (test-irregular-boxes))
+  (test-irregular-boxes)
+  (test-sudoku-grid-mistakes)
+  (test-box-grid-mistakes))
