@@ -236,7 +236,7 @@ digit in the given row/col/box."
         (svref columns (+ (* col 9) (1- digit) (* 9 9 2)))
         (svref columns (+ (* (1- box) 9) (1- digit) (* 9 9 3)))))
 
-(defun solve (sudoku-grid box-grid solution-grid)
+(defun solve (sudoku-grid &optional (box-grid *default-box-grid*) (solution-grid (string-to-grid "")))
   "Solve the SUDOKU-GRID puzzle where the boxes are defined by BOX-GRID.
 Overwrite SOLUTION-GRID with the solution if available, otherwise set it
 the same values as SUDOKU-GRID. Returns SOLUTION-GRID."
