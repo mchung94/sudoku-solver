@@ -129,6 +129,10 @@ searching for all solutions."
   "A 9x9 2D array to represent a Sudoku grid."
   '(simple-array grid-value (9 9)))
 
+(defun make-empty-grid ()
+  "Create and return an empty grid."
+  (make-array '(9 9) :element-type 'grid-value :initial-element 0))
+
 (defun box-grid-mistakes (box-grid)
   "Return a list of (row . column) conses for bad cell values in a box grid.
 Box grids use the digits 1-9 to indicate the different boxes/regions that must
@@ -188,8 +192,8 @@ the same digit."
 
 (defun string-to-grid (string)
   "Create a grid from a string. 0 and period are empty cells, 1-9 are digits,
-ignore all other characters."
-  (loop with grid = (make-array '(9 9) :element-type 'grid-value :initial-element 0)
+ignore all other characters. Any unassigned cells default to empty."
+  (loop with grid = (make-empty-grid)
         for ch across (remove-if (complement #'digit-char-p) (substitute #\0 #\. string))
         for index from 0
         do (setf (row-major-aref grid index) (position ch "0123456789"))
@@ -314,18 +318,16 @@ the same values as SUDOKU-GRID. Returns SOLUTION-GRID."
     "869571324327849516145623987952368741681497235473215869514982673798136452236754198"))
 
 (defun test-sudoku-hardest20 ()
-  (loop with solution-grid = (make-array '(9 9) :element-type 'grid-value :initial-element 0)
-        for input in *hardest20*
+  (loop for input in *hardest20*
         for expected in *hardest20-solutions*
-        for actual = (grid-to-string (solve (string-to-grid input) *default-box-grid* solution-grid))
+        for actual = (grid-to-string (solve (string-to-grid input)))
         do (assert (string= expected actual))))
 
 (defun test-irregular-boxes ()
-  (let* ((solution-grid (make-array '(9 9) :element-type 'grid-value :initial-element 0))
-         (sudoku-string "....2...12....96..53.....27.923761....71...3...69415.33......9.....6...57...3..1.")
+  (let* ((sudoku-string "....2...12....96..53.....27.923761....71...3...69415.33......9.....6...57...3..1.")
          (box-string "111222233111122223441155233444555533644475593664777593666677799866877999888888899")
          (expected "948527361253719684531698427492376158687154239826941573315482796179263845764835912")
-         (actual (grid-to-string (solve (string-to-grid sudoku-string) (string-to-grid box-string) solution-grid))))
+         (actual (grid-to-string (solve (string-to-grid sudoku-string) (string-to-grid box-string)))))
     (assert (string= expected actual))))
 
 (defun test-sudoku-grid-mistakes ()
