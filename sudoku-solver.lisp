@@ -210,7 +210,17 @@ be easier to see."
                               collect (char ".123456789" (aref grid row col))))))
 
 (defvar *default-box-grid*
-  (string-to-grid "111222333111222333111222333444555666444555666444555666777888999777888999777888999")
+  (string-to-grid "1 1 1 | 2 2 2 | 3 3 3
+                   1 1 1 | 2 2 2 | 3 3 3
+                   1 1 1 | 2 2 2 | 3 3 3
+                   ------+-------+------
+                   4 4 4 | 5 5 5 | 6 6 6
+                   4 4 4 | 5 5 5 | 6 6 6
+                   4 4 4 | 5 5 5 | 6 6 6
+                   ------+-------+------
+                   7 7 7 | 8 8 8 | 9 9 9
+                   7 7 7 | 8 8 8 | 9 9 9
+                   7 7 7 | 8 8 8 | 9 9 9")
   "The 3x3 regions that must contain the digits 1-9 in regular Sudoku.")
 
 (defvar *constraint-names*
@@ -240,7 +250,7 @@ digit in the given row/col/box."
         (svref columns (+ (* col 9) (1- digit) (* 9 9 2)))
         (svref columns (+ (* (1- box) 9) (1- digit) (* 9 9 3)))))
 
-(defun solve (sudoku-grid &optional (box-grid *default-box-grid*) (solution-grid (string-to-grid "")))
+(defun solve (sudoku-grid &optional (box-grid *default-box-grid*) (solution-grid (make-empty-grid)))
   "Solve the SUDOKU-GRID puzzle where the boxes are defined by BOX-GRID.
 Overwrite SOLUTION-GRID with the solution if available, otherwise set it
 the same values as SUDOKU-GRID. Returns SOLUTION-GRID."
