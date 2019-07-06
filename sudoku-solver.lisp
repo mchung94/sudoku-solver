@@ -142,12 +142,11 @@ but Microsoft Sudoku supports irregular-shaped boxes. Cell values are bad when
 they're empty, not next to another cell with the same digit, or if there are not
 exactly nine of the same digit."
   (labels ((neighbors (row col)
-             (loop for r from (1- row) to (1+ row)
-                   when (<= 0 r 8)
-                   nconc (loop for c from (1- col) to (1+ col)
-                               when (and (<= 0 c 8)
-                                         (not (and (= c col) (= r row))))
-                               collect (cons r c))))
+             (loop for (ro . co) in '((-1 . -1) (-1 . 0) (-1 . 1) (0 . -1) (0 . 1) (1 . -1) (1 . 0) (1 . 1))
+                   for r = (+ row ro)
+                   for c = (+ col co)
+                   when (and (<= 0 r 8) (<= 0 c 8))
+                   collect (cons r c)))
            (separatep (row col box)
              (loop for (r . c) in (neighbors row col)
                    never (= box (aref box-grid r c))))
