@@ -437,14 +437,17 @@ This is when it's not next to another cell with the same color, or if there are 
   (:panes
    (clear-all-numbers-button capi:push-button
                              :text "Clear All Numbers"
+                             :accepts-focus-p nil
                              :callback 'clear-all-numbers-callback)
    (reset-box-colors-button capi:push-button
                             :text "Reset Box Colors"
+                            :accepts-focus-p nil
                             :callback 'reset-box-colors-callback)
    (selector-pane capi:output-pane
-                  :mnemonic-title "Click or Press a key to select the number/color to put in cells (0/Period/Delete erases)."
+                  :mnemonic-title "Click or Press a key to select the number or box color to put in cells (0 erases)."
                   :title-adjust :center
                   :reader selector-pane
+                  :accepts-focus-p nil
                   :display-callback 'display-selector-pane
                   :input-model '(((:press :button-1) click-selector-pane))
                   :draw-with-buffer t
@@ -456,6 +459,7 @@ This is when it's not next to another cell with the same color, or if there are 
                 :mnemonic-title "Puzzle"
                 :title-adjust :center
                 :reader puzzle-pane
+                :accepts-focus-p t
                 :display-callback 'display-grid-pane
                 :input-model '((:character char-input-callback)
                                ((:key :press) key-input-callback)
@@ -469,6 +473,7 @@ This is when it's not next to another cell with the same color, or if there are 
                   :mnemonic-title "First Solution Found"
                   :title-adjust :center
                   :reader solution-pane
+                  :accepts-focus-p nil
                   :display-callback 'display-grid-pane
                   :draw-with-buffer t
                   :visible-min-height +grid-size+
@@ -506,6 +511,7 @@ This is when it's not next to another cell with the same color, or if there are 
   (let ((model (model interface)))
     (clear-all-numbers model)
     (unselect-all model))
+  (capi:set-pane-focus (puzzle-pane interface))
   (invalidate-all interface))
 
 (defun reset-box-colors-callback (data interface)
@@ -514,6 +520,7 @@ This is when it's not next to another cell with the same color, or if there are 
   (let ((model (model interface)))
     (reset-all-boxes model)
     (unselect-all model))
+  (capi:set-pane-focus (puzzle-pane interface))
   (invalidate-all interface))
 
 (defun draw-bad-box-color (pane x y)
