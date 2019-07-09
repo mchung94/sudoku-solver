@@ -18,7 +18,7 @@ Things other Sudoku solvers support, but aren't supported here:
   the fastest solver out there.
 
 # Screenshots
-Here's a screenshot of a regular Sudoku puzzle:
+Here's a screenshot of a regular Sudoku puzzle.  The puzzle is on the left and the solution is on the right:
 ![Regular Sudoku Screenshot](screenshot.png)
 
 Here's a screenshot of a Sudoku puzzle with irregular shaped boxes:
