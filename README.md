@@ -19,10 +19,10 @@ Things other Sudoku solvers support, but aren't supported here:
 
 # Screenshots
 Here's a screenshot of a regular Sudoku puzzle.  The puzzle is on the left and the solution is on the right:
-![Regular Sudoku Screenshot](screenshot.png)
+![Regular Sudoku Screenshot](screenshots/regular-screenshot.png)
 
 Here's a screenshot of a Sudoku puzzle with irregular shaped boxes:
-![Sudoku with Irregular Boxes Screenshot](irregular-boxes-screenshot.png)
+![Sudoku with Irregular Boxes Screenshot](screenshots/irregular-boxes-screenshot.png)
 
 # Usage
 - For Windows, [download the latest release](https://github.com/mchung94/sudoku-solver/releases) and unzip the file.
