@@ -53,3 +53,19 @@ Here's a screenshot of a Sudoku puzzle with irregular shaped boxes:
 - The "Clear All Numbers" button will delete all the numbers in the puzzle.
   The "Reset Box Colors" button will reset the colored boxes back to the nine
   3x3 boxes used in regular Sudoku games.
+
+# To Do List
+- Consider adding a button to clear box colors completely. It's kind of
+  annoying to adjust the colors right now because of the white X's making it
+  look wrong until you not only assign the color to the right squares, but also
+  remove the color from the wrong squares.
+- Consider reworking the solving algorithm to only return a solution if the
+  puzzle only has one unique solution. This will make the solver slower though,
+  because now it stops searching after finding any valid solution.
+- Reconsider the process of deciding when to display a solution in response to
+  user input. For performance reasons, the program doesn't begin to show
+  solutions at all until at least 15 numbers are in place. Originally, I always
+  showed some kind of solution even when there aren't any numbers at all in the
+  puzzle. It seemed fast enough until I ran into one situation where I added a
+  third number to an irregular puzzle and the program took a very long time to
+  find a solution to display.
