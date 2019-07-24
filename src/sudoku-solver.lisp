@@ -163,9 +163,9 @@ exactly nine of the same digit."
           for row from 0 below 9
           nconc (loop for col from 0 below 9
                       for box = (aref box-grid row col)
-                      when (or (zerop box)
-                               (separatep row col box)
-                               (/= 9 (svref counts box)))
+                      when (and (not (zerop box))
+                                (or (separatep row col box)
+                                    (/= 9 (svref counts box))))
                       collect (cons row col)))))
 
 (defun sudoku-grid-mistakes (sudoku-grid box-grid)
@@ -245,8 +245,8 @@ digit in the given row/col/box."
 
 (defun solve (sudoku-grid &optional (box-grid *default-box-grid*) (solution-grid (make-empty-grid)))
   "Solve the SUDOKU-GRID puzzle where the boxes are defined by BOX-GRID.
-Overwrite SOLUTION-GRID with the solution if available, otherwise set it
-the same values as SUDOKU-GRID. Returns SOLUTION-GRID."
+Overwrite SOLUTION-GRID with the solution if available, otherwise set it to
+empty values (zeros). Returns SOLUTION-GRID."
   (let* ((root (make-empty-matrix *constraint-names*))
          (columns (coerce (matrix-columns root) 'vector)))
     (dotimes (row 9)
@@ -268,5 +268,13 @@ the same values as SUDOKU-GRID. Returns SOLUTION-GRID."
              (loop for d = data then (right d)
                    repeat 4
                    append (name (column d)))))
-      (dolist (data (dlx-search root) solution-grid)
-        (apply #'set-digit (row-names data))))))
+      (let ((solution (dlx-search root)))
+        (cond (solution
+               (dolist (data solution)
+                 (apply #'set-digit (row-names data))))
+              (t
+               (dotimes (row 9)
+                 (dotimes (col 9)
+                   (setf (aref solution-grid row col) 0)))))
+        solution-grid))))
+               

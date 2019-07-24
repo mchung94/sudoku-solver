@@ -52,6 +52,12 @@
       (setf (aref (box-grid model) row col) (aref *default-box-grid* row col))))
   (update-grids model))
 
+(defun clear-all-boxes (model)
+  "Erase all of the grid's box colors.
+This is meant to be a convenience when the user wants to play a game with irregular boxes."
+  (clear-grid (box-grid model))
+  (update-grids model))
+
 (defun set-digit-to-cell (grid row col digit-char)
   "Set the number to the grid at the given row and column to digit-char or delete if already there."
   (let* ((digit (position digit-char "0123456789"))
@@ -126,21 +132,22 @@ This is when it's not next to another cell with the same color, or if there are 
 
 (defconstant +selector-size+ (* +cell-size+ 18) "The width of the Selector Pane in pixels.")
 
-(defvar *selector-chars* "123456789ABCDEFGHI" "The characters that can be selected for grid values/colors.")
+(defparameter *selector-chars* "123456789ABCDEFGHI" "The characters that can be selected for grid values/colors.")
 
-(defvar *box-colors*
+(defparameter *box-colors*
   (flet ((rgb (red green blue)
            "Return an RGB color based on values from 0-255."
            (color:make-rgb (float (/ red 255)) (float (/ green 255)) (float (/ blue 255)))))
-    (make-array 9 :initial-contents (list (rgb 85 148 167)
-                                          (rgb 141 107 33)
-                                          (rgb 106 116 123)
-                                          (rgb 193 159 55)
-                                          (rgb 64 112 157)
-                                          (rgb 148 51 36)
-                                          (rgb 96 70 162)
-                                          (rgb 141 76 145)
-                                          (rgb 69 145 71))))
+    (make-array 10 :initial-contents (list (rgb 64 64 64) ; the first color is the lack of a box color
+                                           (rgb 85 148 167)
+                                           (rgb 141 107 33)
+                                           (rgb 106 116 123)
+                                           (rgb 193 159 55)
+                                           (rgb 64 112 157)
+                                           (rgb 148 51 36)
+                                           (rgb 96 70 162)
+                                           (rgb 141 76 145)
+                                           (rgb 69 145 71))))
   "Box colors drawn in the background of each cell - these are similar to the colors in Microsoft Sudoku.")
 
 (capi:define-interface solver-interface ()
@@ -154,6 +161,10 @@ This is when it's not next to another cell with the same color, or if there are 
                             :text "Reset Box Colors"
                             :accepts-focus-p nil
                             :callback 'reset-box-colors-callback)
+   (clear-box-colors-button capi:push-button
+                            :text "Clear Box Colors"
+                            :accepts-focus-p nil
+                            :callback 'clear-box-colors-callback)
    (selector-pane capi:output-pane
                   :mnemonic-title "Click or Press a key to select the number or box color to put in cells (0 erases)."
                   :title-adjust :center
@@ -193,7 +204,7 @@ This is when it's not next to another cell with the same color, or if there are 
                   :visible-max-width +grid-size+))
   (:layouts
    (button-row-layout capi:row-layout
-                      '(clear-all-numbers-button reset-box-colors-button))
+                      '(clear-all-numbers-button reset-box-colors-button clear-box-colors-button))
    (grid-row-layout capi:row-layout
                     '(puzzle-pane solution-pane))
    (column-layout capi:column-layout
@@ -234,6 +245,15 @@ This is when it's not next to another cell with the same color, or if there are 
   (capi:set-pane-focus (puzzle-pane interface))
   (invalidate-all interface))
 
+(defun clear-box-colors-callback (data interface)
+  "Erase box colors to white and redraw when the Clear Box Colors button is pressed."
+  (declare (ignore data))
+  (let ((model (model interface)))
+    (clear-all-boxes model)
+    (unselect-all model))
+  (capi:set-pane-focus (puzzle-pane interface))
+  (invalidate-all interface))
+
 (defun draw-bad-box-color (pane x y)
   "Draw a white X on a cell to indicate its box color has a problem."
   (let ((start-x (+ x 6))
@@ -257,7 +277,7 @@ This is when it's not next to another cell with the same color, or if there are 
          (y (* row +cell-size+))
          (model (model (capi:element-interface pane)))
          (digit (aref (capi:capi-object-property pane :grid) row col))
-         (box-color (svref *box-colors* (1- (aref (box-grid model) row col)))))
+         (box-color (svref *box-colors* (aref (box-grid model) row col))))
     (gp:draw-rectangle pane x y +cell-size+ +cell-size+ :foreground box-color :filled t)
     (when (bad-box-color-p model row col)
       (draw-bad-box-color pane x y))
@@ -283,7 +303,7 @@ This is when it's not next to another cell with the same color, or if there are 
         for char across *selector-chars*
         for i from 0
         for start-x = (* i +cell-size+)
-        for box-color = (if (digit-char-p char) :darkolivegreen (svref *box-colors* (- i 9)))
+        for box-color = (if (digit-char-p char) :darkolivegreen (svref *box-colors* (- i 8)))
         do
         (gp:draw-rectangle pane start-x 0 +cell-size+ +cell-size+ :foreground box-color :filled t)
         (draw-character pane start-x 0 char (if (eql curr char) :aliceblue :black))
