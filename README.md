@@ -41,6 +41,9 @@ Here's a screenshot of a Sudoku puzzle with irregular shaped boxes:
     colors. Then click on squares in the Puzzle grid on the left. The color or
     digit will be added. Click again with the same number selected to delete
     the number. Pressing the Escape key will undo any selection.
+- One tip is that when entering box colors for a Sudoku puzzle with irregular
+  shaped boxes, click on the "Clear Box Colors" button to remove all the colors
+  first.
 - Mistakes: A number will be highlighted in red if there is a duplicate number
   on the same row, column, or box. If the box color is bad there will be a
   white X drawn on it. This happens if there are not exactly nine squares
@@ -55,10 +58,6 @@ Here's a screenshot of a Sudoku puzzle with irregular shaped boxes:
   3x3 boxes used in regular Sudoku games.
 
 # To Do List
-- Consider adding a button to clear box colors completely. It's kind of
-  annoying to adjust the colors right now because of the white X's making it
-  look wrong until you not only assign the color to the right squares, but also
-  remove the color from the wrong squares.
 - Consider reworking the solving algorithm to only return a solution if the
   puzzle only has one unique solution. This will make the solver slower though,
   because now it stops searching after finding any valid solution.
