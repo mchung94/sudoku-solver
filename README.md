@@ -3,6 +3,8 @@ This is a program to help solve puzzles in Microsoft Sudoku. Check out the
 [download page](https://github.com/mchung94/sudoku-solver/releases)
 to download a program you can run on Windows 10.
 
+Watch the [demonstration video](https://youtu.be/fbYcz3zLgk8).
+
 It's written in LispWorks 7.1.1 64 bit on Windows 10, not tested yet on other
 implementations.
 
