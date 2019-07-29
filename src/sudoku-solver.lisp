@@ -1,6 +1,27 @@
+;;;; This is a Sudoku solver using Knuth's DLX algorithm (Algorithm X
+;;;; implemented using dancing links).
+;;;;
+;;;; It involves converting a Sudoku puzzle into an exact cover problem: given
+;;;; a matrix of 0s and 1s, does it have a set of rows containing exactly one 1
+;;;; in each column? Each row of the matrix represents putting a digit (1-9) in
+;;;; one of the 81 squares and each column represents a constraint being
+;;;; fulfilled (for example: "There is a 9 in the first row"). There are 324
+;;;; constraints.
+;;;;
+;;;; By converting a Sudoku puzzle into a matrix like this, it's easy to choose
+;;;; an action (putting a digit into a square) that doesn't immediately cause an
+;;;; error like having the same number twice on a given column/row/box, and it's
+;;;; easy to undo an action when backtracking.
+;;;;
+;;;; In regular Sudoku, the numbers 1-9 must be in each row, column, and nine
+;;;; 3x3 boxes on the grid. But this solver can support irregular shaped boxes,
+;;;; which is a variant used in Microsoft Sudoku's daily challenges.
+
 (in-package #:sudoku-solver)
 
-;;; A representation of a matrix of 0s and 1s (for the DLX algorithm)
+
+
+;;;; A representation of a matrix of 0s and 1s (for the DLX algorithm)
 
 (defclass data ()
   ((left :accessor left)
@@ -67,7 +88,7 @@ with VAR set to each value up to but not including END. Return RESULT-FORM."
 
 
 
-;;; An implementation of the DLX algorithm for solving exact cover problems
+;;;; An implementation of the DLX algorithm for solving exact cover problems
 
 (defun choose-column (matrix-root)
   "Return the column with the smallest size."
@@ -116,7 +137,7 @@ searching for all solutions."
 
 
 
-;;; Sudoku puzzle solver with support for irregular-shaped boxes/regions.
+;;;; Sudoku puzzle solver with support for irregular-shaped boxes/regions.
 
 (deftype grid-value ()
   "Valid values in Sudoku grids. 0 means an empty cell."

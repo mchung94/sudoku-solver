@@ -1,4 +1,14 @@
+;;;; The GUI code consists of a model which contains the data and behavior
+;;;; required for user interaction, but without any GUI library dependencies,
+;;;; and LispWorks-specific GUI code to display the model and convert user
+;;;; actions like mouse clicks or keyboard presses into actions which update
+;;;; the model.
+
 (in-package #:sudoku-solver)
+
+
+
+;;;; A GUI model representing the behavior of the program and user interaction
 
 (defclass model ()
   ((puzzle-grid :reader puzzle-grid :initform (make-empty-grid)
@@ -122,7 +132,7 @@ This is when it's not next to another cell with the same color, or if there are 
 
 
 
-;;; LispWorks-specific GUI code
+;;;; LispWorks-specific GUI code to display the model and handle inputs
 
 (defconstant +cell-size+ 48 "The width/height of a Sudoku grid cell in pixels.")
 
